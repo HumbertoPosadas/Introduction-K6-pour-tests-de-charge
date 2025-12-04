@@ -59,7 +59,12 @@ export default function () {
     check(res,{'Redirection vers quickpizza OK': (r) => r.url == 'https://quickpizza.grafana.com/'} ) // vérifie que l'url de la page est correcte
     */
 
-    //Assertions format compact
+    //Assertions syntaxe correxcte
+    /*
+    check(objetAVerifier, {
+    'nom_du_test': (parametre) => condition_de_verification,
+    });
+    */
     check(res, {
         'La page a chargé correctement': (r) => r.status == 200,
         'Validation titre affiché dans la page': (r) => r.body.includes('QuickPizza'),

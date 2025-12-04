@@ -18,7 +18,7 @@
     k6 run script-browser.js
 */
 
-import { sleep } from 'k6';
+import { check, sleep } from 'k6';
 import { browser } from 'k6/browser';
 
 export const options = {
@@ -27,6 +27,14 @@ export const options = {
     Un scenario définit comment les utilisateurs virtuels (VUs) vont se comporter pendant le test.
     Ici le mot scenario ne vaut pas dire un script de test, mais une configuration de l'execution du test.
     Chaque scenario peut avoir son propre type d'executor, nombre de VUs, iterations, etc.
+
+    Particullarités pour k6 browser :
+    - Chaque scénario peut avoir sa propre configuration de navigateur (type, options de lancement, etc.)
+    - Chaque scénario peut simuler des comportements utilisateurs différents dans le navigateur.
+    - Chaque scénario peut avoir des seuils de performance spécifiques liés aux actions dans le navigateur.
+    - Chaque VU dans un scénario k6 browser ouvre une instance de navigateur distincte.
+    - Il ne peut pas y avoir un nombre de VU superieur au nombre d'iterations dans un scénario car chaque VU doit executer au moins une iteration pour ouvrir une instance de navigateur.
+    - Les scénarios k6 browser peuvent être plus gourmands en ressources système en fonction du nombre de VUs et du type de navigateur utilisé.
   */
     scenarios: {  
     MyCustomNScenario: {                     // Nom du scénario (peut être n'importe quel nom)
@@ -43,7 +51,8 @@ export const options = {
     MySecondScenario:{
         executor: 'constant-vus',    // Type d'exécuteur : nombre constant de VUs pendant toute la durée du test
         vus: 5,                       // Nombre d'utilisateurs virtuels (VUs)
-        duration: '10s',              // Durée totale du scénario
+        iterations: 10,              // Nombre total d'itérations à exécuter
+        duration: '30s',              // Durée totale du scénario
         options: {                     // Options spécifiques à l'exécuteur
             browser: {                 // Configuration du navigateur
             type: 'chromium',   // Type de navigateur : chromium, firefox, webkit
@@ -70,8 +79,15 @@ export default async function () {
   const page = await browser.newPage(); // Ouvre une nouvelle page dans le navigateur
 
   try {
-    await page.goto('https://test.k6.io/'); // Navigue vers l'URL spécifiée
+    const response = await page.goto('https://test.k6.io/'); // Navigue vers l'URL spécifiée
     console.log('titre de la page:', await page.title());   // Affiche le titre de la page dans la console
+    check(response,
+      { 
+        'page loaded': () => response.status() === 200,
+        'Titre de la page est correct': ()=> page.title() === 'K6 Test Site',
+    },  // Vérification simple pour s'assurer que la page a été chargée
+    );
+    await sleep(1); // Pause de 1 seconde pour simuler le temps de réflexion de l'utilisateur
   } finally {
     await page.close();
   }
